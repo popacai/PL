@@ -133,7 +133,7 @@ The following are the definitions of shapes:
   emits the series of moves required to solve the puzzle.
   For example, running `hanoi 2 "a" "b" "c"`
 
-  should emit the text
+  should emit the text:s
 
 ~~~  
 move disc from a to c
@@ -152,8 +152,83 @@ Part 2: Drawing Fractals
 Write a function `sierpinskiCarpet` that displays this figure on the
 screen:
 
+
+
+> inchToPixel  :: Float -> Int
+> inchToPixel x = round (1*x)
+
+> pixelToInch  :: Int -> Float
+> pixelToInch n = intToFloat n / 100
+>
+> intToFloat   :: Int -> Float
+> intToFloat  n = fromInteger (toInteger n)
+
+> xWin, yWin :: Int
+> xWin = 900
+> yWin = 900
+
+> xWin2, yWin2 :: Int
+> xWin2 = xWin `div` 2 
+> yWin2 = yWin `div` 2 
+
+> trans :: Vertex -> Point
+> trans (x,y) = ( xWin2 + inchToPixel x, 
+>                 yWin2 - inchToPixel y )
+
+
+> transList       :: [Vertex] -> [Point]
+> transList []     = []
+> transList (p:ps) = trans p : transList ps
+
+> shapeToGraphic :: Shape -> Float -> Float -> Graphic
+> shapeToGraphic (Rectangle s1 s2) x y
+>   = let s12 = s1/2
+>         s22 = s2/2
+>     in polygon 
+>          (transList [(-s12 + x,-s22 + y),(-s12 + x,s22 + y),
+>                      (s12 + x,s22 + y),(s12 + x,-s22 + y)])
+
+> spaceClose :: Window -> IO ()
+> spaceClose w
+>   = do k <- getKey w
+>        if k==' ' || k == '\x0'
+>           then closeWindow w
+>           else spaceClose w
+
+> minSize :: Float
+> minSize = 1.0
+
+> drawSquare :: Window -> Float -> Float -> Float -> IO()
+> drawSquare w size x y
+>   =   if size <= minSize
+>       then drawRect w (Rectangle minSize minSize) x y
+>       else let gap = size * 1.0 / 50 
+>                _size = size * 1.0 / 3 - gap
+>                offset = _size + gap
+>            in do drawSquare w _size (x - offset) y
+>                  drawSquare w _size (x + offset) y
+>                  drawSquare w _size (x + offset) (y + offset)
+>                  drawSquare w _size (x + offset) (y - offset)
+>                  drawSquare w _size (x - offset) (y + offset)
+>                  drawSquare w _size (x - offset) (y - offset)
+>                  drawSquare w _size x (y - offset)
+>                  drawSquare w _size x (y + offset)
+
+> drawRect :: Window -> Shape -> Float -> Float -> IO()
+> drawRect w s x y= drawInWindow w (withColor Blue
+>                  (shapeToGraphic s x y))
+
+> testDraw :: IO()
+> testDraw = runGraphics (
+>               do w <- openWindow "Hw1" (xWin, yWin)
+>                  drawSquare w 600.0 0 0
+>                  spaceClose w
+>                        )
+
+
+
 > sierpinskiCarpet :: IO ()
-> sierpinskiCarpet = error "Define me!"
+> sierpinskiCarpet = testDraw
 
 Note that you either need to run your program in `SOE/src` or add this
 path to GHC's search path via `-i/path/to/SOE/src/`.
@@ -164,8 +239,61 @@ Also, the organization of SOE has changed a bit, so that now you use
    own design.  Be creative!  The only constraint is that it shows some
    pattern of recursive self-similarity.
 
+> drawHexa :: Window -> Float -> Float -> Float -> IO()
+> drawHexa w x y r = let x1 = floor(x)
+>                        y1 = floor(y + r)
+>                        x2 = floor(x - r * 0.866)
+>                        y2 = floor(y + r * 0.5)
+>                        x3 = floor(x - r * 0.866)
+>                        y3 = floor(y - r * 0.5)
+>                        x4 = floor(x) 
+>                        y4 = floor(y - r)
+>                        x5 = floor(x + r * 0.866) 
+>                        y5 = floor(y - r * 0.5)
+>                        x6 = floor(x + r * 0.866) 
+>                        y6 = floor(y + r * 0.5)
+>                    in do drawInWindow w (withColor Yellow
+>                               (polygon[(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x5, y5), (x6, y6)]))
+
+> minFlake :: Float
+> minFlake = 5.0
+
+> hexaFlake :: Window -> Float -> Float -> Float -> IO()
+> hexaFlake w x y r
+>   = if r <= minFlake
+>     then drawHexa w x y r
+>     else let r2 = r / 3.0
+>              x1 = (x)
+>              y1 = (y + r) 
+>              x2 = (x - r * 0.866)
+>              y2 = (y + r * 0.5)
+>              x3 = (x - r * 0.866)
+>              y3 = (y - r * 0.5)
+>              x4 = (x) 
+>              y4 = (y - r)
+>              x5 = (x + r * 0.866) 
+>              y5 = (y - r * 0.5)
+>              x6 = (x + r * 0.866) 
+>              y6 = (y + r * 0.5)
+>              x7 = x
+>              y7 = y
+>          in do hexaFlake w x1 y1 r2
+>                hexaFlake w x2 y2 r2
+>                hexaFlake w x3 y3 r2
+>                hexaFlake w x4 y4 r2
+>                hexaFlake w x5 y5 r2
+>                hexaFlake w x6 y6 r2
+>                hexaFlake w x7 y7 r2
+
 > myFractal :: IO ()
-> myFractal = error "Define me!"
+> myFractal = runGraphics(
+>                    do w <- openWindow "myFractal" (xWin, yWin)
+>                       hexaFlake w 450.0 450.0 100.0
+>                       spaceClose w
+>                    )
+
+
+
 
 Part 3: Recursion Etc.
 ----------------------
