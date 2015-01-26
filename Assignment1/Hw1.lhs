@@ -18,10 +18,13 @@ Part 0: All About You
 Tell us your name, email and student ID, by replacing the respective
 strings below
 
-> myName  = "Xintian Li"
-> myEmail = "xil200@eng.ucsd.edu"
-> mySID   = "A53058364"
+myName  = "Xintian Li"
+myEmail = "xil200@eng.ucsd.edu"
+mySID   = "A53058364"
 
+> myName  = "Tao Cai"
+> myEmail = "taocai@eng.ucsd.edu"
+> mySID   = "A53051887"
 
 Preliminaries
 -------------
