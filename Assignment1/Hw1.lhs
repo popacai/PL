@@ -523,7 +523,20 @@ formatPlay xml = PCDATA "WRITE ME!"
 > formatBody (Element "TITLE" content) = [Element "h1" content]
 > formatBody (Element "PERSONAE" content) = [Element "h2" [PCDATA "Dramatis Personae"]] 
 >                                           ++ folderAllElements formatPersonae content
+> formatBody (Element "ACT" content) = folderAllElements formatAct content
 > formatBody x = [PCDATA "not handled"]
+
+> formatAct :: SimpleXML -> [SimpleXML]
+> formatAct (Element "TITLE" content) = [Element "h2" content]
+> formatAct (Element "SCENE" content) = folderAllElements formatScene content
+
+> formatScene :: SimpleXML -> [SimpleXML]
+> formatScene(Element "TITLE" content) = [Element "h3" content]
+> formatScene(Element "SPEECH" content) = folderAllElements formatSpeech content
+
+> formatSpeech :: SimpleXML -> [SimpleXML]
+> formatSpeech(Element "SPEAKER" content) = [Element "b" content] ++ [brElement]
+> formatSpeech(Element "LINE" content) = content ++ [brElement]
 
 > brElement :: SimpleXML
 > brElement = (Element "br" [])
