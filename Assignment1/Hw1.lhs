@@ -288,7 +288,7 @@ Also, the organization of SOE has changed a bit, so that now you use
 > myFractal :: IO ()
 > myFractal = runGraphics(
 >                    do w <- openWindow "myFractal" (xWin, yWin)
->                       hexaFlake w 450.0 450.0 100.0
+>                       hexaFlake w 450.0 450.0 250.0
 >                       spaceClose w
 >                    )
 
@@ -511,9 +511,25 @@ You will write a function `formatPlay` that converts an XML structure
 representing a play to another XML structure that, when printed,
 yields the HTML speciﬁed above (but with no whitespace except what's
 in the textual data in the original XML).
+formatPlay xml = PCDATA "WRITE ME!"
+
+> folderAllElements function list = foldr (\x y -> x ++ y) [] (map function list)
 
 > formatPlay :: SimpleXML -> SimpleXML
-> formatPlay xml = PCDATA "WRITE ME!"
+> formatPlay (Element "PLAY" xml) = Element "html"
+>                                   [Element "body" (folderAllElements formatBody xml)]
+
+> formatBody :: SimpleXML -> [SimpleXML]
+> formatBody (Element "TITLE" content) = [Element "h1" content]
+> formatBody (Element "PERSONAE" content) = [Element "h2" [PCDATA "Dramatis Personae"]] 
+>                                           ++ folderAllElements formatPersonae content
+> formatBody x = [PCDATA "not handled"]
+
+> brElement :: SimpleXML
+> brElement = (Element "br" [])
+
+> formatPersonae :: SimpleXML -> [SimpleXML]
+> formatPersonae (Element "PERSONA" content) = content ++ [brElement]
 
 The main action that we've provided below will use your function to
 generate a ﬁle `dream.html` from the sample play. The contents of this
