@@ -101,10 +101,10 @@ The following are the definitions of shapes:
 
 > enlarge n factor = n * sqrt factor
 > bigger :: Shape -> Float -> Shape
-> bigger (Rectangle len width) factor     = rectangle (len * sqrt factor) (width * sqrt factor)
-> bigger (Ellipse radius1 radius2) factor = Ellipse (radius1 * sqrt factor) (radius2 * sqrt factor)
-> bigger (RtTriangle base height) factor  = rtTriangle (base * sqrt factor) (height * sqrt factor)
-> bigger (Polygon vs) factor              = Polygon (map (\(a, b) -> (a * sqrt factor, b * sqrt factor)) vs)
+> bigger (Rectangle len width) factor     = rectangle (enlarge len factor) (enlarge width factor)
+> bigger (Ellipse radius1 radius2) factor = Ellipse (enlarge radius1 factor) (enlarge radius2 factor)
+> bigger (RtTriangle base height) factor  = rtTriangle (enlarge base factor) (enlarge height factor)
+> bigger (Polygon vs) factor              = Polygon (map (\(a, b) -> (enlarge a factor, enlarge b factor)) vs)
 
   that takes a shape `s` and expansion factor `e` and returns
   a shape which is the same as (i.e., similar to in the geometric sense)
@@ -167,8 +167,8 @@ screen:
 > intToFloat  n = fromInteger (toInteger n)
 
 > xWin, yWin :: Int
-> xWin = 900
-> yWin = 900
+> xWin = 400
+> yWin = 400
 
 > xWin2, yWin2 :: Int
 > xWin2 = xWin `div` 2 
@@ -224,7 +224,7 @@ screen:
 > testDraw :: IO()
 > testDraw = runGraphics (
 >               do w <- openWindow "Hw1" (xWin, yWin)
->                  drawSquare w 600.0 0 0
+>                  drawSquare w 250.0 0 0
 >                  spaceClose w
 >                        )
 
@@ -290,8 +290,8 @@ Also, the organization of SOE has changed a bit, so that now you use
 
 > myFractal :: IO ()
 > myFractal = runGraphics(
->                    do w <- openWindow "myFractal" (xWin, yWin)
->                       hexaFlake w 450.0 450.0 250.0
+>                    do w <- openWindow "myFractal" (400, 400)
+>                       hexaFlake w 200.0 200.0 100.0
 >                       spaceClose w
 >                    )
 
@@ -309,7 +309,7 @@ they are passed contain at least one element.)
 Write a *non-recursive* function to compute the length of a list
 
 > lengthNonRecursive :: [a] -> Int
-> lengthNonRecursive xs = foldr (\_ x -> x + 1) 1 xs
+> lengthNonRecursive xs = foldr (\_ x -> x + 1) 0 xs
 
 `doubleEach [1,20,300,4000]` should return `[2,40,600,8000]`
 
