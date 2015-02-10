@@ -6,7 +6,7 @@ title: Homework #2, Due Friday 2/24/14
 > module Hw2 where
 
 > import Control.Applicative hiding (empty, (<|>))
-> import Data.Map
+> import Data.Map hiding (foldl, foldr)
 > import Control.Monad.State hiding (when)
 > import Text.Parsec hiding (State, between)
 > import Text.Parsec.Combinator hiding (between)
@@ -50,9 +50,9 @@ Problem 0: All About You
 Tell us your name, email and student ID, by replacing the respective
 strings below
 
-> myName  = "Write Your Name  Here"
-> myEmail = "Write Your Email Here"
-> mySID   = "Write Your SID   Here"
+> myName  = "Xintian Li"
+> myEmail = "xil200@eng.ucsd.edu"
+> mySID   = "A53058364"
 
 
 Problem 1: All About `foldl`
@@ -61,28 +61,37 @@ Problem 1: All About `foldl`
 Define the following functions by filling in the "error" portion:
 
 1. Describe `foldl` and give an implementation:
+The 'foldl' takes the second argument and the first item in the list and applies the function to them, then feeds the function with the result and the second item from the list, and so on. If the list is empty, then the argument remains the same.
 
 > myFoldl :: (a -> b -> a) -> a -> [b] -> a
-> myFoldl f b xs = error "TBD"
+> myFoldl f b []       = b
+> myFoldl f b (x : xs) = myFoldl f (f b x) xs
 
 2. Using the standard `foldl` (not `myFoldl`), define the list reverse function:
 
 > myReverse :: [a] -> [a]
-> myReverse xs = error "TBD"
+> myReverse xs = foldl (\arr y -> y : arr) [] xs
 
 3. Define `foldr` in terms of `foldl`:
 
 > myFoldr :: (a -> b -> b) -> b -> [a] -> b
-> myFoldr f b xs = error "TBD"
+> myFoldr f a xs =  foldl (\g b x -> g (f b x)) id xs a
 
 4. Define `foldl` in terms of the standard `foldr` (not `myFoldr`):
 
 > myFoldl2 :: (a -> b -> a) -> a -> [b] -> a
-> myFoldl2 f b xs = error "TBD"
+> myFoldl2 f b xs = foldr (\a g x -> g (f x a)) id xs b
 
 5. Try applying `foldl` to a gigantic list. Why is it so slow?
    Try using `foldl'` (from [Data.List](http://www.haskell.org/ghc/docs/latest/html/libraries/base/Data-List.html#3))
    instead; can you explain why it's faster?
+
+When we apply the 'foldl' to the gigantic list, the function is obviously slow when the size of list increases. And in the extreme cases, the function terminates due to exausting of the memory.
+
+This is because when using the 'foldl', the continuous recursion will require more and more memory, until all memory is exausted. And the recursion and context switch significantly slow the execution of the function.
+
+On the other hand, the 'foldl'' is more optimized. It will avoid unnecessary recursion, and try to reuse the same memory space for subproblems. Therefore by using this case, we can get rid of lots of memory utilization and time for context switch, and the execution of the function is significantly faster.
+
 
 Part 2: Binary Search Trees
 ===========================

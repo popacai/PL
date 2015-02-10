@@ -1,0 +1,5 @@
+f X < 0 then
+  X := 0 - X
+else
+  skip
+endif
