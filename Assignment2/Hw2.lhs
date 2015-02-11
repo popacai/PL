@@ -6,7 +6,7 @@ title: Homework #2, Due Friday 2/24/14
 > module Hw2 where
 
 > import Control.Applicative hiding (empty, (<|>))
-> import Data.Map hiding (foldl, foldr)
+> import Data.Map hiding (foldl, foldr, delete)
 > import Control.Monad.State hiding (when)
 > import Text.Parsec hiding (State, between)
 > import Text.Parsec.Combinator hiding (between)
@@ -105,7 +105,21 @@ Recall the following type of binary search trees:
 Define a `delete` function for BSTs of this type:
 
 > delete :: (Ord k) => k -> BST k v -> BST k v
-> delete k t = error "TBD"
+> delete _ Emp = Emp
+> delete k (Bind k' _ Emp Emp) | k == k' = Emp
+> delete k (Bind k' _ Emp rc)  | k == k' = rc
+> delete k (Bind k' _ lc Emp)  | k == k' = lc
+> delete k (Bind k' v' lc rc)
+>   | k < k' = Bind k' v' (delete k lc) rc
+>   | k > k' = Bind k' v' lc (delete k rc)
+>   | otherwise = Bind k'' v'' lc rc'
+>                 where (k'', v'') = minNode rc
+>                       rc' = delete k'' rc
+
+> minNode :: (BST k v) -> (k, v)
+> minNode Emp = error "Emp BST error"
+> minNode (Bind k v Emp _) = (k, v)
+> minNode (Bind _ _ lc _)  = minNode lc
 
 Part 3: An Interpreter for WHILE 
 ================================
