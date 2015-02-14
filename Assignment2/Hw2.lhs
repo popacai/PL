@@ -53,9 +53,13 @@ Problem 0: All About You
 Tell us your name, email and student ID, by replacing the respective
 strings below
 
-> myName  = "Xintian Li"
-> myEmail = "xil200@eng.ucsd.edu"
-> mySID   = "A53058364"
+myName  = "Xintian Li"
+myEmail = "xil200@eng.ucsd.edu"
+mySID   = "A53058364"
+
+> myName  = "Tao Cai"
+> myEmail = "taocai@eng.ucsd.edu"
+> mySID   = "A53051887"
 
 
 Problem 1: All About `foldl`
@@ -375,7 +379,7 @@ Parsing Statements
 Next, use the expression parsers to build a statement parser
 
 > statementP :: Parser Statement
-> statementP = stateAll `chainl1` (lexeme $ char ';' >> return Sequence)
+> statementP = chainl1 stateAll (lexeme $ char ';' >> return Sequence)
 
 > stateAll :: Parser Statement
 > stateAll = stateSkip <|> stateAssign <|> stateIf <|> stateWhile <|> statementP
