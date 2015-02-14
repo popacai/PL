@@ -341,13 +341,15 @@ where `"true"` and `"false"` should be parsed appropriately.
 Continue to use the above to parse the binary operators
 
 > opP :: Parser Bop 
-> opP = opP0 <|> opP1 <|> opP2
-> opP0 = constP "+" Plus  <|> constP "-" Minus
-> opP1 = constP "*" Times <|> constP "/" Divide
-> opP2 = constP ">" Gt <|> constP "<" Lt <|> constP ">=" Ge <|> constP "<=" Le
+> opP = constP "+" Plus  
+>       <|> constP "-" Minus
+>       <|> constP "*" Times 
+>       <|> constP "/" Divide
+>       <|> constP ">" Gt 
+>       <|> constP "<" Lt 
+>       <|> constP ">=" Ge 
+>       <|> constP "<=" Le
  
-
-
 Parsing Expressions 
 -----------------
 
