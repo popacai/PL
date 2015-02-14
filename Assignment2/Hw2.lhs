@@ -396,13 +396,13 @@ Next, use the expression parsers to build a statement parser
 
 > stateIf :: Parser Statement
 > stateIf = do lexeme $ string "if"
->              e <- exprP
+>              expr <- exprP
 >              lexeme $ string "then"
 >              s1 <- statementP
 >              lexeme $ string "else"
 >              s2 <- statementP
 >              lexeme $ string "endif"
->              return (If e s1 s2)
+>              return (If expr s1 s2)
 
 > stateWhile :: Parser Statement
 > stateWhile = do lexeme $ string "while"
