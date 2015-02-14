@@ -7,10 +7,13 @@ title: Homework #2, Due Friday 2/24/14
 
 > import Control.Applicative hiding (empty, (<|>))
 > import Data.Map hiding (foldl, foldr, delete)
+> import qualified Data.Map as Map
 > import Control.Monad.State hiding (when)
 > import Text.Parsec hiding (State, between)
 > import Text.Parsec.Combinator hiding (between)
 > import Text.Parsec.Char
+> import Text.Parsec.Language (haskellDef)
+> import qualified Text.Parsec.Token as Token
 > import Text.Parsec.String
 
 This week's homework is presented as a literate Haskell file,
@@ -199,9 +202,29 @@ change, when we add exceptions and such.
 **Hint:** The value `get` is of type `State Store Store`. Thus, to extract 
 the value of the "current store" in a variable `s` use `s <- get`.
 
-> evalE (Var x)      = error "TBD"
-> evalE (Val v)      = error "TBD" 
-> evalE (Op o e1 e2) = error "TBD"
+> evalE (Var x)      = do s <- get
+>                         return (Map.findWithDefault (IntVal 0) x s )
+
+> evalE (Val v)      = return v
+> evalE (Op o e1 e2) = do v1 <- evalE e1
+>                         v2 <- evalE e2
+>                         return (bop o v1 v2)
+
+If it is not init, using the zero
+
+> bop :: Bop -> Value -> Value -> Value
+> bop _ (BoolVal _) _                           = IntVal 0
+> bop _ _ (BoolVal _)                           = IntVal 0
+> bop Plus (IntVal value1) (IntVal value2)      = IntVal (value1 + value2)
+> bop Minus (IntVal value1) (IntVal value2)     = IntVal (value1 - value2)
+> bop Times (IntVal value1) (IntVal value2)     = IntVal (value1 * value2)
+> bop Divide (IntVal value1) (IntVal 0)         = error "divied by zero"
+> bop Divide (IntVal value1) (IntVal value2)    = IntVal (value1 `div` value2)
+> bop Lt (IntVal value1) (IntVal value2)        = BoolVal (value1 < value2)
+> bop Le (IntVal value1) (IntVal value2)        = BoolVal (value1 <= value2)
+> bop Gt (IntVal value1) (IntVal value2)        = BoolVal (value1 > value2)
+> bop Ge (IntVal value1) (IntVal value2)        = BoolVal (value1 >= value2)
+
 
 
 Statement Evaluator
@@ -220,18 +243,25 @@ evaluating the `Statement`.
 Thus, to "update" the value of the store with the new store `s'` 
 do `put s`.
 
-> evalS w@(While e s)    = error "TBD" 
-> evalS Skip             = error "TBD"
-> evalS (Sequence s1 s2) = error "TBD"
-> evalS (Assign x e )    = error "TBD"
-> evalS (If e s1 s2)     = error "TBD" 
+> evalS w@(While e s)    = evalS $ If e (Sequence s (While e s)) Skip
+> evalS Skip             = return ()
+> evalS (Sequence s1 s2) = do evalS s1
+>                             evalS s2
+> evalS (Assign x e )    = do v <- evalE e
+>                             s <- get
+>                             put $ Map.insert x v s
+> evalS (If e s1 s2)     = do rb <- evalE e
+>                             case rb of
+>                                       (BoolVal True)  -> evalS s1
+>                                       (BoolVal False) -> evalS s2
+>                                       _               -> return() 
 
 In the `If` case, if `e` evaluates to a non-boolean value, just skip both
 the branches. (We will convert it into a type error in the next homework.)
 Finally, write a function 
 
 > execS :: Statement -> Store -> Store
-> execS = error "TBD"
+> execS = execState . evalS
 
 such that `execS stmt store` returns the new `Store` that results
 from evaluating the command `stmt` from the world `store`. 
@@ -288,39 +318,56 @@ First, we will write parsers for the `Value` type
 To do so, fill in the implementations of
 
 > intP :: Parser Value
-> intP = error "TBD" 
+> intP = do n <- Token.lexeme (Token.makeTokenParser haskellDef) (many1 digit)
+>           return (IntVal (read n))
 
 Next, define a parser that will accept a 
 particular string `s` as a given value `x`
 
 > constP :: String -> a -> Parser a
-> constP s x = error "TBD"
+> constP s x = do Token.lexeme (Token.makeTokenParser haskellDef) (string s)
+>                 return x
 
 and use the above to define a parser for boolean values 
 where `"true"` and `"false"` should be parsed appropriately.
 
 > boolP :: Parser Value
-> boolP = error "TBD"
+> boolP = constP "true" (BoolVal True) <|> constP "false" (BoolVal False)
 
 Continue to use the above to parse the binary operators
 
 > opP :: Parser Bop 
-> opP = error "TBD"
+> opP = opP0 <|> opP1 <|> opP2
+> opP0 = constP "+" Plus  <|> constP "-" Minus
+> opP1 = constP "*" Times <|> constP "/" Divide
+> opP2 = constP ">" Gt <|> constP "<" Lt <|> constP ">=" Ge <|> constP "<=" Le
  
 
+
 Parsing Expressions 
--------------------
+-----------------
 
 Next, the following is a parser for variables, where each 
 variable is one-or-more uppercase letters. 
 
+
+> parens = Token.parens (Token.makeTokenParser haskellDef) 
+> lexeme = Token.lexeme (Token.makeTokenParser haskellDef) 
+
 > varP :: Parser Variable
-> varP = many1 upper
+> varP =  lexeme (many1 upper)
 
 Use the above to write a parser for `Expression` values
 
+> parseP = varP >>= return . Var
+> parseValue = valueP >>= return . Val
+> parseExpr = parens exprP
+> parseAll = parseP <|> parseValue <|>  parseExpr
+
+> lexemeParser = lexeme $ opP >>= return . Op
+
 > exprP :: Parser Expression
-> exprP = error "TBD"
+> exprP = lexeme $ chainl1 parseAll lexemeParser
 
 Parsing Statements
 ------------------
@@ -328,7 +375,40 @@ Parsing Statements
 Next, use the expression parsers to build a statement parser
 
 > statementP :: Parser Statement
-> statementP = error "TBD" 
+> statementP = stateAll `chainl1` (lexeme $ char ';' >> return Sequence)
+
+> stateAll :: Parser Statement
+> stateAll = stateSkip <|> stateAssign <|> stateIf <|> stateWhile <|> statementP
+
+> stateSkip :: Parser Statement
+> stateSkip = do lexeme $ string "skip"
+>                return Skip
+
+> stateAssign :: Parser Statement
+> stateAssign = do v <- varP
+>                  lexeme $ string ":="
+>                  e <- exprP
+>                  return (Assign v e)
+
+> stateIf :: Parser Statement
+> stateIf = do lexeme $ string "if"
+>              e <- exprP
+>              lexeme $ string "then"
+>              s1 <- statementP
+>              lexeme $ string "else"
+>              s2 <- statementP
+>              lexeme $ string "endif"
+>              return (If e s1 s2)
+
+> stateWhile :: Parser Statement
+> stateWhile = do lexeme $ string "while"
+>                 e <- exprP
+>                 lexeme $ string "do"
+>                 s <- statementP
+>                 lexeme $ string "endwhile"
+>                 return (While e s)
+
+
 
 When you are done, we can put the parser and evaluator together 
 in the end-to-end interpreter function
