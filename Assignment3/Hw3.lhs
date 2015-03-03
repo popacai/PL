@@ -435,14 +435,30 @@ outputs an N-bit binary number. Subtracting one from zero should
 yield zero.
 
 > prop_bitSubtractor_Correct ::  Signal -> [Bool] -> Bool
-> prop_bitSubtractor_Correct = error "TODO"
+> prop_bitSubtractor_Correct sig xs =
+>   case binary xs of
+>       0   -> binary (sampleN out) == 0
+>       bxs -> binary (sampleN out) == bxs - binary (sample1 sig)
+>   where (out, _) = bitSubtractor (sig, map lift0 xs)
 
 2. Using the `bitAdder` circuit as a model, deﬁne a `bitSubtractor` 
 circuit that implements this functionality and use QC to check that 
 your behaves correctly.
 
 > bitSubtractor :: (Signal, [Signal]) -> ([Signal], Signal)
-> bitSubtractor = error "TODO"
+> bitSubtractor (sig, xs) = (muxN (repeat low, diff, out), low)
+>   where (diff, out) = bitSubtractorReal (sig, xs)
+
+> bitSubtractorReal :: (Signal, [Signal]) -> ([Signal], Signal)
+> bitSubtractorReal (bin, [])   = ([], bin)
+> bitSubtractorReal (bin, x:xs) = (diff_start:diff_end, out)
+>   where (diff_start, b)       = halfSub (x, bin)
+>         (diff_end, out)       = bitSubtractorReal (b, xs)
+
+> halfSub :: (Signal, Signal) -> (Signal, Signal)
+> halfSub (x,y) = (diff, out)
+>   where diff = xor2 (x, y)
+>         out = and2 (diff, y)
 
 
 Problem: Multiplication
@@ -453,7 +469,9 @@ for a `multiplier` circuit that takes two binary numbers of arbitrary
 width as input and outputs their product.
 
 > prop_Multiplier_Correct ::  [Bool] -> [Bool] -> Bool
-> prop_Multiplier_Correct = error "TODO"
+> prop_Multiplier_Correct m1 m2 = 
+>   binary (sampleN prod) == binary m1 * binary m2
+>   where prod = multiplier (map lift0 m1, map lift0 m2)
 
 4. Deﬁne a `multiplier` circuit and check that it satisﬁes your 
 speciﬁcation. (Looking at how adder is deﬁned will help with this, 
@@ -462,7 +480,11 @@ recursive structure should work, think about how to multiply two
 binary numbers on paper.)
 
 > multiplier :: ([Signal], [Signal]) -> [Signal]
-> multiplier = error "TODO"
+> multiplier (sig1@(x:xs), y:ys) = m : ms
+>   where m  = mux (x, low, y)
+>         ms =  adder (muxN (xs, repeat low, y), multiplier (sig1, ys))
+> multiplier (_, _)  = []
+
 
 [1]: http://www.cis.upenn.edu/~bcpierce/courses/552-2008/resources/circuits.hs
 
