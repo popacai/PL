@@ -109,7 +109,14 @@ and functions that generate an arbitrary BST operations
 Write an insertion function 
 
 > bstInsert :: (Ord k) => k -> v -> BST k v -> BST k v
-> bstInsert = error "TBD"
+> bstInsert k v t = balance $ _bstInsert k v t
+
+> _bstInsert :: (Ord k) => k -> v -> BST k v -> BST k v
+> _bstInsert k v Emp = Bind k v Emp Emp
+> _bstInsert k v (Bind k' v' l r)
+>     | k < k'    = Bind k' v' (bstInsert k v l) r
+>     | k > k'    = Bind k' v' l (bstInsert k v r)
+>     | otherwise = Bind k v l r
 
 such that `bstInsert k v t` inserts a key `k` with value 
 `v` into the tree `t`. If `k` already exists in the input
@@ -129,7 +136,24 @@ are done, your code should satisfy the following QC properties.
 Write a deletion function for BSTs of this type:
 
 > bstDelete :: (Ord k) => k -> BST k v -> BST k v
-> bstDelete k t = error "TBD"
+> bstDelete k t = balance $ _bstDelete k t
+
+> _bstDelete :: (Ord k) => k -> BST k v -> BST k v
+> _bstDelete _ Emp = Emp
+> _bstDelete k (Bind k' _ Emp Emp) | k == k' = Emp
+> _bstDelete k (Bind k' _ Emp rc)  | k == k' = rc
+> _bstDelete k (Bind k' _ lc Emp)  | k == k' = lc
+> _bstDelete k (Bind k' v' lc rc)
+>   | k < k' = Bind k' v' (_bstDelete k lc) rc
+>   | k > k' = Bind k' v' lc (_bstDelete k rc)
+>   | otherwise = Bind k'' v'' lc rc'
+>                 where (k'', v'') = minNode rc
+>                       rc' = _bstDelete k'' rc
+
+> minNode :: (BST k v) -> (k, v)
+> minNode Emp = error "Emp BST error"
+> minNode (Bind k v Emp _) = (k, v)
+> minNode (Bind _ _ lc _)  = minNode lc
 
 such that `bstDelete k t` removes the key `k` from the tree `t`. 
 If `k` is absent from the input tree, then the tree is returned 
@@ -160,7 +184,7 @@ We say that a tree is *balanced* if
 Write a balanced tree generator 
 
 > genBal :: Gen (BST Int Char)
-> genBal = error "TBD"
+> genBal = liftM ofBSTops . listOf $ genBSTadd
 
 such that
 
@@ -171,6 +195,28 @@ such that
 
 Rig it so that your insert and delete functions *also*
 create balanced trees. That is, they satisfy the properties
+
+> rotateL :: BST k v -> BST k v
+> rotateL (Bind k v l (Bind k' v' l' r')) = Bind k' v' (Bind k v l l') r'
+> rotateL Emp                             = Emp
+> rotateL (Bind k v l Emp)                = Bind k v l Emp
+
+> rotateR :: BST k v -> BST k v
+> rotateR (Bind k v (Bind k' v' l' r') r) = Bind k' v' l' (Bind k v r' r)
+> rotateR Emp                             = Emp
+> rotateR (Bind k v Emp r)                = Bind k v Emp r
+
+> heightDiff Emp            = 0
+> heightDiff (Bind _ _ l r) = height l - height r
+
+> balance :: BST k v -> BST k v
+> balance Emp = Emp
+> balance t@(Bind k v l r)  
+>     | (heightDiff t) > 1 && (heightDiff l) < 0  = rotateR (Bind k v (rotateL l) r)
+>     | (heightDiff t) > 1                        = rotateR t
+>     | (heightDiff t) < -1 && (heightDiff r) > 0 = rotateL (Bind k v l (rotateR r))
+>     | (heightDiff t) < -1                       = rotateL t
+>     | otherwise                                 = t
 
 > prop_insert_bal ::  Property
 > prop_insert_bal = forAll (listOf genBSTadd) $ isBal . ofBSTops 
