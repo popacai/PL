@@ -46,9 +46,9 @@ Problem 0: All About You
 Tell us your name, email and student ID, by replacing the respective
 strings below
 
-> myName  = "Write Your Name  Here"
-> myEmail = "Write Your Email Here"
-> mySID   = "Write Your SID   Here"
+> myName  = "Tao Cai"
+> myEmail = "taocai@eng.ucsd.edu"
+> mySID   = "A53051887"
 
 Problem 1: Binary Search Trees Revisited 
 ========================================
