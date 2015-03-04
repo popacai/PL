@@ -493,16 +493,16 @@ your behaves correctly.
 
 > bitSubtractor :: (Signal, [Signal]) -> ([Signal], Signal)
 > bitSubtractor (sig, xs) = (muxN (repeat low, diff, out), low)
->   where (diff, out) = bitSubtractorReal (sig, xs)
+>   where (diff, out) = fullSub (sig, xs)
 
-> bitSubtractorReal :: (Signal, [Signal]) -> ([Signal], Signal)
-> bitSubtractorReal (bin, [])   = ([], bin)
-> bitSubtractorReal (bin, x:xs) = (diff_start:diff_end, out)
+> fullSub :: (Signal, [Signal]) -> ([Signal], Signal)
+> fullSub (bin, [])   = ([], bin)
+> fullSub (bin, x:xs) = (diff_start:diff_end, out)
 >   where (diff_start, b)       = halfSub (x, bin)
->         (diff_end, out)       = bitSubtractorReal (b, xs)
+>         (diff_end, out)       = fullSub (b, xs)
 
 > halfSub :: (Signal, Signal) -> (Signal, Signal)
-> halfSub (x,y) = (diff, out)
+> halfSub (x, y) = (diff, out)
 >   where diff = xor2 (x, y)
 >         out = and2 (diff, y)
 
@@ -526,9 +526,10 @@ recursive structure should work, think about how to multiply two
 binary numbers on paper.)
 
 > multiplier :: ([Signal], [Signal]) -> [Signal]
-> multiplier (sig1@(x:xs), y:ys) = m : ms
+> multiplier (sig@(x:xs), y:ys) = m : ms
 >   where m  = mux (x, low, y)
->         ms =  adder (muxN (xs, repeat low, y), multiplier (sig1, ys))
+>         ms = adder (muxN (xs, repeat low, y), 
+>                     multiplier (sig, ys))
 > multiplier (_, _)  = []
 
 
